@@ -21,14 +21,18 @@ more time into WhisperDog's remaining bugs.
 ## Setup status (2026-09-17)
 
 - [x] Forked to SailorMartin/Handy, cloned locally
-- [x] `upstream` remote wired up
+- [x] `upstream` remote wired up (`origin` uses SSH — HTTPS had no
+      credentials configured)
 - [x] Rust installed (`rustup`, stable, 1.98.1)
 - [x] Bun installed (1.4.2) — note: this project uses Bun, not npm
 - [x] Xcode Command Line Tools license agreed
 - [x] `bun install` — 343 packages, clean
-- [ ] `bun tauri dev` — NOT yet run. Needs a real Terminal session:
-      first launch will prompt for microphone + accessibility
-      permissions, which can't be granted headlessly.
+- [x] `cmake` installed via Homebrew (4.4.3) — `transcribe-cpp-sys`'s
+      CMake build script needs it; first `bun tauri dev` attempt
+      failed with `is 'cmake' not installed?` before this
+- [ ] `bun tauri dev` — retrying after the cmake fix. Needs a real
+      Terminal session: first launch will prompt for microphone +
+      accessibility permissions, which can't be granted headlessly.
 
 ## Next step (manual)
 
@@ -40,8 +44,8 @@ bun tauri dev
 ```
 
 Grant mic + accessibility permissions when prompted. First build will
-be slow (full Rust compile of whisper-rs/transcribe-rs); subsequent
-runs are fast.
+be slow (full Rust compile of whisper-rs/transcribe-rs, plus the
+transcribe-cpp-sys CMake/ggml build); subsequent runs are fast.
 
 ## Evaluation questions to answer once it's running
 
