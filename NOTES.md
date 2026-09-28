@@ -67,3 +67,42 @@ export PATH="$HOME/.bun/bin:$PATH"
 source "$HOME/.cargo/env"
 bun tauri dev
 ```
+
+## Native app build (2026-09-28)
+
+Built as a real `.app` so it gets its own entry in Privacy & Security
+(Accessibility, Microphone) instead of borrowing Terminal's:
+
+```bash
+cd ~/projects/Handy
+export PATH="$HOME/.bun/bin:/opt/homebrew/bin:$PATH"; source "$HOME/.cargo/env"
+bun tauri build --bundles app --config '{"bundle":{"createUpdaterArtifacts":false}}'
+ditto src-tauri/target/release/bundle/macos/Handy.app /Applications/Handy.app
+```
+
+- `createUpdaterArtifacts:false` because the stock config demands an
+  updater signing key we don't have; `--bundles app` skips the DMG.
+- Signed ad-hoc (`signingIdentity: "-"`), not notarized. Consequence:
+  every rebuild changes the code signature, and macOS may drop the
+  Accessibility grant. If paste silently stops after a rebuild, remove
+  Handy from Accessibility and re-add it.
+- Release build takes several minutes (LTO, codegen-units=1).
+- Same bundle id (`com.pais.handy`) as the dev run, so settings and
+  downloaded models carry over.
+
+## Wrong-text-pasted bug: root cause (`src-tauri/src/clipboard.rs`)
+
+Default path (`PasteMethod::CtrlV`): save clipboard -> write transcript
+-> sleep `paste_delay_ms` (60) -> send Cmd+V -> sleep
+`paste_delay_after_ms` (60) -> restore old clipboard. If the target app
+handles Cmd+V later than ~60ms after the keystroke, it reads the
+*restored* clipboard and pastes the old content. Timer-based race.
+
+Options, best first:
+1. `reliable_paste` (Debug panel, Cmd+Shift+D; macOS/Windows beta,
+   issue #502): restores the clipboard only after the target app has
+   actually read the transcript. Fixes the race rather than widening it.
+2. Raise the paste delays in the Debug panel (100-300ms). Crude.
+3. `PasteMethod::Direct` (types via enigo). Avoids the clipboard
+   entirely, but upstream docs warn of garbled output on non-US
+   layouts; untested on QWERTZ.
